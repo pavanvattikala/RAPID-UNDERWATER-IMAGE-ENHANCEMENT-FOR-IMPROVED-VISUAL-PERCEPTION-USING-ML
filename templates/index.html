@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rapid Underwater Image Enhancement</title>
+  </head>
+  <style>
+    body {
+      background-color: grey;
+    }
+
+    body > h1 {
+      text-align: center;
+    }
+
+    #loadModelDiv {
+      width: 100%;
+      display: flex;
+      align-content: center;
+      justify-content: center;
+    }
+    button {
+      padding: 20px;
+      font-size: larger;
+      font-weight: bold;
+    }
+
+    #displayIMGDiv {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-evenly;
+      align-content: stretch;
+      padding: 50px;
+    }
+
+    #uploadDiv {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      align-content: stretch;
+    }
+
+    #generateDiv {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      align-content: stretch;
+    }
+
+    #generateDiv > button {
+      padding: 20px;
+      font-weight: bold;
+      background-color: orange;
+    }
+
+    #outputDiv {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      align-content: stretch;
+    }
+    /* Add this CSS to your stylesheet */
+    .loading-animation {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-left-color: #7986cb; /* Change the color as needed */
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite; /* Adjust animation duration as needed */
+      margin: 0 auto;
+      display: none; /* Initially hide the loading animation */
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+  <body>
+    <h1>
+      RAPID UNDERWATER IMAGE ENHANCEMENT FOR IMPROVED VISUAL PERCEPTION USING ML
+    </h1>
+
+    <!-- Button to generate and load FUnIE-GAN model -->
+    <div id="loadModelDiv">
+      <button onclick="loadModel()">Generate &amp; Load FUnIE-GAN Model</button>
+      <p id="modelStatus"></p>
+    </div>
+
+    <div id="displayIMGDiv">
+      <div id="uploadDiv">
+        <!-- Button to upload an image -->
+        <input
+          type="file"
+          id="imageUpload"
+          accept="image/*"
+          onchange="uploadImage(this)"
+        />
+        <!-- Image tag to display the uploaded image -->
+        <img
+          id="uploadedImage"
+          src=""
+          alt="Uploaded Image"
+          style="display: block"
+        />
+      </div>
+      <div id="generateDiv">
+        <!-- Button to generate improved image -->
+        <button onclick="generateImprovedImage()">
+          Generate Improved Image
+        </button>
+      </div>
+      <div id="outputDiv">
+        <!-- improved image -->
+        <img id="generatedImage" src="" style="display: block" />
+      </div>
+    </div>
+    <div id="loadingAnimation" class="loading-animation"></div>
+
+    <div>
+      <center>
+        <button onclick="generateGraphs()">Generate Graphs</button>
+      </center>
+      <div id="graphsDiv" style="display: flex; justify-content: space-around">
+        <!-- Graphs -->
+
+        <div id="correlation-graph-div">
+          <h1>Correlation PLOT</h1>
+          <img
+            id="correlation-graph-img"
+            src=""
+            alt=""
+            srcset=""
+            style="width: 80%"
+          />
+        </div>
+        <div id="density-graph-div">
+          <h1>Density PLOT</h1>
+          <img
+            id="density-graph-img"
+            src=""
+            alt=""
+            srcset=""
+            style="width: 100%"
+          />
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function loadModel() {
+        fetch("/loadModel", {
+          method: "POST",
+        })
+          .then((response) => response.text())
+          .then((data) => {
+            document.getElementById("modelStatus").innerText = data;
+          })
+          .catch((error) => console.error("Error loading model:", error));
+      }
+
+      function uploadImage(input) {
+        const formData = new FormData();
+        formData.append("image", input.files[0]);
+
+        fetch("/uploadImage", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.text())
+          .then((data) => {
+            console.log("Image uploaded:", data);
+            // Display the uploaded image
+            document.getElementById("uploadedImage").src = data;
+            document.getElementById("uploadedImage").style.display = "block";
+          })
+          .catch((error) => console.error("Error uploading image:", error));
+      }
+
+      function generateImprovedImage() {
+        // Get the image path from the uploaded image tag
+        const imagePath = document.getElementById("uploadedImage").src;
+        const relativePath = imagePath
+          .replace(window.location.origin, "")
+          .replace("/uploadedImages/", "");
+
+        console.log("Generating improved image for:", relativePath);
+
+        fetch("/generateImprovedImage", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: `image_path=${relativePath}`,
+        })
+          .then((response) => response.text())
+          .then((data) => {
+            console.log("Improved image generated:", data);
+            // You can do something with the generated image path here
+            document.getElementById("generatedImage").src = "";
+            document.getElementById("generatedImage").style.display = "block";
+            document.getElementById("generatedImage").src = data;
+          })
+          .catch((error) =>
+            console.error("Error generating improved image:", error)
+          );
+      }
+
+      function generateGraphs() {
+        const imagePath = document.getElementById("uploadedImage").src;
+        const relativePath = imagePath
+          .replace(window.location.origin, "")
+          .replace("/uploadedImages/", "");
+
+        document.getElementById("loadingAnimation").style.display = "block";
+
+        fetch("/generateGraphs", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: `image_path=${relativePath}`,
+        })
+          .then((response) => response.text())
+          .then((data) => {
+            // Display the graphs
+            document.getElementById("graphsDiv").style.display = "flex";
+
+            document.getElementById("loadingAnimation").style.display = "none";
+
+            // Correlation graph
+            document.getElementById("correlation-graph-img").src =
+              "graphs/correlation_plot.png";
+
+            // Density graph
+
+            document.getElementById("density-graph-img").src =
+              "graphs/density_plot.png";
+          })
+          .catch((error) => console.error("Error generating Graphs"));
+      }
+    </script>
+  </body>
+</html>
